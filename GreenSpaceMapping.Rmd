@@ -59,15 +59,19 @@ zip_parks <-
   
   summarize(
             parks_inzip = sum(tractparks_inzip, na.rm = T),
-            parkarea_inzip = sum(tractparkarea_inzip, na.rm = T)
-            )
+            parkarea_inzip = sum(tractparkarea_inzip, na.rm = T),
+            ZAREA = ZAREA
+            ) %>%
+  mutate(
+          proptractparkarea_inzip = parkarea_inzip / ZAREA * 100
+          )
 
 
 ```
 
 
 
-```{r}
+```{r SubjectsPark}
 subject_park_exposure <- 
   zips_of_interest %>%
   pivot_longer(
@@ -81,3 +85,86 @@ subject_park_exposure <-
 
 ```
 
+
+```{r SummaryStats}
+
+sum_stats <-
+  subject_park_exposure %>%
+  group_by(location) %>%
+  summarize(
+    avg_parks = mean(parks_inzip, na.rm = T),
+    avg_parkarea = mean(parkarea_inzip, na.rm = T),
+    avg_prop_parkarea = mean(proptractparkarea_inzip, na.rm = T))
+```
+
+
+```{r plotTotalParks}
+
+total_parks_chart <-
+  sum_stats %>% 
+  ggplot() +
+  geom_bar(
+    aes(
+      x = location,
+      y = avg_parks,
+    ),
+    stat = "identity",
+    fill = "chartreuse3",
+    position = "dodge"
+  ) +
+  labs(
+    x = "Location",
+    y = "Parks",
+    title = "Average Total Parks in Respondents Zip Codes",
+  )
+
+total_parks_chart
+```
+
+
+```{r plotParkArea}
+
+total_parkarea_chart <-
+  sum_stats %>% 
+  ggplot() +
+  geom_bar(
+    aes(
+      x = location,
+      y = avg_parkarea,
+    ),
+    stat = "identity",
+    fill = "chartreuse3",
+    position = "dodge"
+  ) +
+  labs(
+    x = "Location",
+    y = "Park Area [m^2]",
+    title = "Average Park Area in Respondents Zip Codes",
+  )
+
+total_parkarea_chart
+```
+
+
+```{r plotPropParkArea}
+
+total_prop_parkarea_chart <-
+  sum_stats %>% 
+  ggplot() +
+  geom_bar(
+    aes(
+      x = location,
+      y = avg_prop_parkarea,
+    ),
+    stat = "identity",
+    fill = "chartreuse3",
+    position = "dodge"
+  ) +
+  labs(
+    x = "Location",
+    y = "Proportion of Zip Code Area in Parks",
+    title = "Average Proportion of Park Area in Respondents Zip Codes",
+  )
+
+total_prop_parkarea_chart
+```
