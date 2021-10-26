@@ -109,7 +109,7 @@ total_parks_chart <-
       y = avg_parks,
     ),
     stat = "identity",
-    fill = "chartreuse3",
+    fill = "chartreuse4",
     position = "dodge"
   ) +
   labs(
@@ -133,7 +133,7 @@ total_parkarea_chart <-
       y = avg_parkarea,
     ),
     stat = "identity",
-    fill = "chartreuse3",
+    fill = "chartreuse4",
     position = "dodge"
   ) +
   labs(
@@ -157,13 +157,13 @@ total_prop_parkarea_chart <-
       y = avg_prop_parkarea,
     ),
     stat = "identity",
-    fill = "chartreuse3",
+    fill = "chartreuse4",
     position = "dodge"
   ) +
   labs(
     x = "Location",
     y = "Proportion of Zip Code Area in Parks",
-    title = "Average Proportion of Park Area in Respondents Zip Codes",
+    title = "Average Proportion of Park Area in Respondents Zip Codes (%)",
   )
 
 total_prop_parkarea_chart
