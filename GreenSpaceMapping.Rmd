@@ -7,7 +7,7 @@ editor_options:
 
 ```{r setup, include=FALSE}
 
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 ```
 
@@ -63,7 +63,8 @@ zip_parks <-
             ZAREA = ZAREA
             ) %>%
   mutate(
-          proptractparkarea_inzip = parkarea_inzip / ZAREA * 100
+          prop_parkarea_inzip = parkarea_inzip / ZAREA * 100,
+          avgparkarea_inzip = parkarea_inzip / parks_inzip
           )
 
 
@@ -80,91 +81,91 @@ subject_park_exposure <-
     values_to = "ZipCode"
   ) %>%
   
-  left_join(zip_parks)
-
-
-```
-
-
-```{r SummaryStats}
-
-sum_stats <-
-  subject_park_exposure %>%
+  left_join(zip_parks) %>% 
+  
   group_by(location) %>%
-  summarize(
-    avg_parks = mean(parks_inzip, na.rm = T),
-    avg_parkarea = mean(parkarea_inzip, na.rm = T),
-    avg_prop_parkarea = mean(proptractparkarea_inzip, na.rm = T))
+  
+  unique()
+
+
 ```
 
 
 ```{r plotTotalParks}
-
-total_parks_chart <-
-  sum_stats %>% 
+total_parks_boxplot <-
+  subject_park_exposure %>%
   ggplot() +
-  geom_bar(
+  geom_boxplot(
     aes(
       x = location,
-      y = avg_parks,
-    ),
-    stat = "identity",
-    fill = "chartreuse4",
-    position = "dodge"
-  ) +
+      y = parks_inzip,
+    )) +
   labs(
     x = "Location",
     y = "Parks",
-    title = "Average Total Parks in Respondents Zip Codes",
+    title = "Total Parks in Respondents' Zip Codes",
   )
 
-total_parks_chart
+total_parks_boxplot
 ```
-
 
 ```{r plotParkArea}
 
-total_parkarea_chart <-
-  sum_stats %>% 
+total_parkarea_boxplot <-
+  subject_park_exposure %>% 
   ggplot() +
-  geom_bar(
+  geom_boxplot(
     aes(
       x = location,
-      y = avg_parkarea,
-    ),
-    stat = "identity",
-    fill = "chartreuse4",
-    position = "dodge"
-  ) +
+      y = parkarea_inzip,
+    )) +
   labs(
     x = "Location",
     y = "Park Area [m^2]",
-    title = "Average Park Area in Respondents Zip Codes",
-  )
+    title = "Park Area in Respondents' Zip Codes",
+  )+
+  ylim(0, 10000000)
 
-total_parkarea_chart
+total_parkarea_boxplot
 ```
 
 
 ```{r plotPropParkArea}
 
-total_prop_parkarea_chart <-
-  sum_stats %>% 
+total_prop_parkarea_boxplot <-
+  subject_park_exposure %>% 
   ggplot() +
-  geom_bar(
+  geom_boxplot(
     aes(
       x = location,
-      y = avg_prop_parkarea,
-    ),
-    stat = "identity",
-    fill = "chartreuse4",
-    position = "dodge"
-  ) +
+      y = prop_parkarea_inzip,
+    )) +
   labs(
     x = "Location",
-    y = "Proportion of Zip Code Area in Parks",
-    title = "Average Proportion of Park Area in Respondents Zip Codes (%)",
+    y = "Proportion of Zip Code Area in Parks (%)",
+    title = "Proportion of Park Area in Respondents' Zip Codes",
   )
 
-total_prop_parkarea_chart
+total_prop_parkarea_boxplot
+```
+
+
+```{r plotAvgParkArea}
+
+total_prop_parkarea_boxplot <-
+  subject_park_exposure %>% 
+  ggplot() +
+  geom_boxplot(
+    aes(
+      x = location,
+      y = avgparkarea_inzip,
+    )) +
+  labs(
+    x = "Location",
+    y = "Average Park Area [m^2]",
+    title = "Average Area of Park in Respondents' Zip Codes",
+  ) + 
+  ylim(0, 1000000) # can comment out to see outliers, but they are really far out
+
+total_prop_parkarea_boxplot
 ```
