@@ -1,0 +1,52 @@
+---
+title: "zip check"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r libraries}
+
+library(tidyverse)
+
+```
+
+```{r}
+init_data <- read_csv("data/NaturalElementsDataFinal - DatasetALLtimes.csv")
+
+time_1h <- init_data %>% filter(time ==1)
+time_2h <- init_data %>% filter(time ==2)
+time_3h <- init_data %>% filter(time ==3)
+
+plot1h <- hist(time_1$homelocation)
+plot2h <- hist(time_2$homelocation)
+plot3h <- hist(time_3$homelocation)
+
+
+plot1h
+plot2h
+plot3h
+```
+
+
+```{r}
+init_data <- read_csv("data/NaturalElementsDataFinal - DatasetALLtimes.csv")
+
+time_1w <- init_data %>% filter(time ==1)
+time_2w <- init_data %>% filter(time ==2)
+time_3w <- init_data %>% filter(time ==3)
+
+plot1w <- hist(time_1$worklocation)
+plot2w <- hist(time_2$worklocation)
+plot3w <- hist(time_3$worklocation)
+
+
+plot1w
+plot2w
+plot3w
+```
