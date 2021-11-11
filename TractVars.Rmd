@@ -1,0 +1,178 @@
+---
+title: "Tract Variables"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+```{r libraries}
+
+library(tidyverse)
+library(tigris)
+library(stringr)
+
+Sys.setenv(CENSUS_KEY="dbcdeeed2f9e907f31811ee78c1f239a2aa77934")
+
+```
+
+```{r LoadData}
+# loading data from saved "data" folder (in github folder)
+lat_longs_full <- read_csv("data/NaturalElementsSpatialAnalysis - EditedLatLong2Surveys.csv")
+park_tracts <- read_csv("data/nanda_parks_tract_2018_01P.csv")
+pop_data <- read_csv("data/DECENNIALPL2020.P1_data_with_overlays_2021-11-04T122132.csv")
+init_data <- read_csv("data/NaturalElementsDataFinal - DatasetALLtimes.csv")
+fips_convert <- read_csv("data/FIPS_Convert.csv") #from https://www.nrcs.usda.gov/wps/portal/nrcs/detail/national/home/?cid=nrcs143_013697
+```
+
+```{r IdentifyTracts}
+
+# colnames(lat_longs_full) <- c("StartDate", "EndDate", "ResponseID", "prolific_ID",
+#                               "lat", "lon", "time", "state", "county", "tract")
+# lat_longs <- filter(lat_longs_full, !is.na(lat)) #removing entries without latlong
+# 
+# for (i in 1:dim(lat_longs)[1]) {
+#   
+#   lat_longs[i,9] <- call_geolocator_latlon(lat = lat_longs$lat[i], lon = lat_longs$lon[i])
+#   print(i)
+#   
+# }
+# 
+# write_csv(lat_longs, "data/LatLon_to_Tract_GEOIDinCounty.csv")
+# geoid <- lat_longs
+# geoid <- filter(geoid_full, !is.na(county))
+
+
+
+geoid_full <- read_csv("data/LatLon_to_Tract_GEOIDinCounty.csv") 
+geoid <- filter(geoid_full, !is.na(county)) #removing entereis that had lat longs not in US census block
+
+```
+
+
+```{r convertGEOID}
+lat_longs_tract <- geoid[,1:7] %>%
+  transmute(
+    prolific_ID = prolific_ID,
+    time = time,
+    tract = NA,
+    CountyCode = NA
+  )
+
+for (i in 1:dim(lat_longs_tract)[1]){
+  lat_longs_tract$tract[i] <- str_sub(geoid$county[i],1,11)
+  lat_longs_tract$CountyCode[i] <- as.numeric(str_sub(geoid$county[i],1,5))
+}
+
+lat_longs_tract <- lat_longs_tract %>%
+  left_join(fips_convert, by = "CountyCode")
+
+```
+
+```{r NationalTractData}
+
+# Population
+pop_data_2020 <- pop_data[-1,] %>%
+  select(GEO_ID, P1_001N) %>%
+  separate(
+      GEO_ID,
+      into = c(NA, "tract"),
+      sep = "US"
+    )%>%
+  transmute(tract, popultion = as.numeric(P1_001N))
+
+# Park
+park_tracts <- park_tracts %>%
+  transmute(tract = tract_fips10, numParks = count_open_parks, tractArea = tract_area,
+            parkArea = tot_park_area, propPark = prop_park_area_tract)
+  
+
+ntl_tract_data <- left_join(park_tracts,pop_data_2020) %>% 
+  mutate(
+    popDensity = popultion / tractArea,
+    parkAreaPerPerson = parkArea / popultion # parkAPP
+  )
+```
+
+```{r NationQuartile}
+
+tractarea_NQs <- quantile(ntl_tract_data$tractArea, na.rm = T)
+parks_NQs <- quantile(ntl_tract_data$numParks, na.rm = T)
+parkarea_NQs <- quantile(ntl_tract_data$parkArea, na.rm = T)
+prop_parkarea_NQs <- quantile(ntl_tract_data$propPark, na.rm = T)
+pop_NQs <- quantile(ntl_tract_data$popultion, na.rm = T)
+popdensity_NQs <- quantile(ntl_tract_data$popDensity, na.rm = T)
+parkAPP_NQs <- quantile(ntl_tract_data$parkAreaPerPerson, na.rm = T)
+
+
+ntl_tract_data <- ntl_tract_data %>%
+  mutate(
+    tractArea_NQ = case_when(
+      tractArea > tractarea_NQs[4] ~ 4,
+      tractArea > tractarea_NQs[3] ~ 3,
+      tractArea > tractarea_NQs[2] ~ 2,
+      tractArea >= tractarea_NQs[1] ~ 1
+      ),
+    numParks_NQ = case_when(
+      numParks > parks_NQs[4] ~ 4,
+      numParks > parks_NQs[3] ~ 3,
+      numParks > parks_NQs[2] ~ 2,
+      numParks >= parks_NQs[1] ~ 1
+      ),
+    parkArea_NQ = case_when(
+      parkArea > parkarea_NQs[4] ~ 4,
+      parkArea > parkarea_NQs[3] ~ 3,
+      parkArea > parkarea_NQs[2] ~ 2,
+      parkArea >= parkarea_NQs[1] ~ 1
+    ),
+    propPark_NQ = case_when(
+      propPark > prop_parkarea_NQs[4] ~ 4,
+      propPark > prop_parkarea_NQs[3] ~ 3,
+      propPark > prop_parkarea_NQs[2] ~ 2,
+      propPark >= prop_parkarea_NQs[1] ~ 1
+    ),
+    popultion_NQ = case_when(
+      popultion > pop_NQs[4] ~ 4,
+      popultion > pop_NQs[3] ~ 3,
+      popultion > pop_NQs[2] ~ 2,
+      popultion >= pop_NQs[1] ~ 1
+    ),
+    popDensity_NQ = case_when(
+      popDensity > popdensity_NQs[4] ~ 4,
+      popDensity > popdensity_NQs[3] ~ 3,
+      popDensity > popdensity_NQs[2] ~ 2,
+      popDensity >= popdensity_NQs[1] ~ 1
+    ),
+    parkAreaPerPerson_NQ = case_when(
+      parkAreaPerPerson > parkAPP_NQs[4] ~ 4,
+      parkAreaPerPerson > parkAPP_NQs[3] ~ 3,
+      parkAreaPerPerson > parkAPP_NQs[2] ~ 2,
+      parkAreaPerPerson >= parkAPP_NQs[1] ~ 1
+    )
+  ) %>%
+# reordering
+  select(tract, tractArea, tractArea_NQ, numParks, numParks_NQ, parkArea, 
+         parkArea_NQ, propPark, propPark_NQ, popultion, popultion_NQ, 
+         popDensity, popDensity_NQ, parkAreaPerPerson, parkAreaPerPerson_NQ)
+
+```
+
+```{r combineData}
+
+combinedVars <- init_data %>%
+  select(prolific_ID, time) %>%
+  left_join(lat_longs_tract, by = c("prolific_ID" = "prolific_ID", "time" = "time")) %>%
+  left_join(ntl_tract_data, by = "tract")
+
+completeData <- init_data %>%
+  left_join(combinedVars, by = c("prolific_ID" = "prolific_ID", "time" = "time"))
+
+write_csv(completeData, "data/NaturalElementsSpatialAnalysis - TractData.csv")
+
+
+```
+
+
