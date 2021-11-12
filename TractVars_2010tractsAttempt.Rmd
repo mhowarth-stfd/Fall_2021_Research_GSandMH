@@ -30,28 +30,27 @@ fips_convert <- read_csv("data/FIPS_Convert.csv") #from https://www.nrcs.usda.go
 
 ```{r IdentifyTracts}
 
-# # retrieves tract from lat long, takes >10 mins to run, so I just saved it and dont run
+colnames(lat_longs_full) <- c("StartDate", "EndDate", "ResponseID", "prolific_ID",
+                              "lat", "lon", "time", "state", "county", "tract")
+lat_longs <- filter(lat_longs_full, !is.na(lat)) #removing entries without latlong
 
-# colnames(lat_longs_full) <- c("StartDate", "EndDate", "ResponseID", "prolific_ID",
-#                               "lat", "lon", "time", "state", "county", "tract")
-# lat_longs <- filter(lat_longs_full, !is.na(lat)) %>% #removing entries without latlong
-#   mutate(GEOID = NA)
-#   
-# for (i in 1:dim(lat_longs)[1]) {
-# 
-#   lat_longs[i,11] <- call_geolocator_latlon(lat = lat_longs$lat[i], lon = lat_longs$lon[i])
-#   print(i)
-# 
-# }
-#  
-# write_csv(lat_longs, "data/LatLon_to_Tract_GEOIDinCounty.csv")
-# geoid_full <- lat_longs
-# geoid <- filter(geoid_full, !is.na(GEOID))
+#saves geoid in county
+for (i in 1:dim(lat_longs)[1]) {
+
+  lat_longs[i,9] <- call_geolocator_latlon(lat = lat_longs$lat[i], lon = lat_longs$lon[i], benchmark = 2010,  vintage = 2010) #benchmark is when data was collected 
+  print(i)
+
+}
 
 
+#write_csv(lat_longs, "data/LatLon_to_Tract_GEOIDinCounty_2010Attempt.csv")
+geoid <- lat_longs
+geoid <- filter(geoid_full, !is.na(county))
 
-geoid_full <- read_csv("data/LatLon_to_Tract_GEOIDinCounty.csv") 
-geoid <- filter(geoid_full, !is.na(GEOID)) #removing entereis that had lat longs not in US census block
+
+
+#geoid_full <- read_csv("data/LatLon_to_Tract_GEOIDinCounty_2010Attempt.csv") 
+#geoid <- filter(geoid_full, !is.na(county)) #removing entereis that had lat longs not in US census block
 
 ```
 
@@ -66,8 +65,8 @@ lat_longs_tract <- geoid[,1:7] %>%
   )
 
 for (i in 1:dim(lat_longs_tract)[1]){
-  lat_longs_tract$tract[i] <- str_sub(geoid$GEOID[i],1,11)
-  lat_longs_tract$CountyCode[i] <- as.numeric(str_sub(geoid$GEOID[i],1,5))
+  lat_longs_tract$tract[i] <- str_sub(geoid$county[i],1,11)
+  lat_longs_tract$CountyCode[i] <- as.numeric(str_sub(geoid$county[i],1,5))
 }
 
 lat_longs_tract <- lat_longs_tract %>%
