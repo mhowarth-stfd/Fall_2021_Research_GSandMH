@@ -166,16 +166,53 @@ ntl_tract_data <- ntl_tract_data %>%
 ```{r combineData}
 
 combinedVars <- init_data %>%
-  select(prolific_ID, time) %>%
+  select(prolific_ID, time, movedyes) %>%
   left_join(lat_longs_tract, by = c("prolific_ID" = "prolific_ID", "time" = "time")) %>%
   left_join(ntl_tract_data, by = "tract")
 
 completeData <- init_data %>%
-  left_join(combinedVars, by = c("prolific_ID" = "prolific_ID", "time" = "time"))
+  left_join(combinedVars %>% select(!movedyes), by = c("prolific_ID" = "prolific_ID", "time" = "time"))
 
 write_csv(completeData, "data/NaturalElementsSpatialAnalysis - TractData.csv")
 
 
 ```
 
+```{r Overwrite NAs}
+
+combinedVars_ovrNA_temp <- NULL # where data with overwritten na's will be stored
+
+#removing data point 1 b/c it has no associated location
+combinedVars2n3 <- combinedVars %>% filter((time == 3) | (time == 2))  
+
+#for looping thru data  known to have some data at 2 and 3
+t3data <- combinedVars %>% filter(time == 3) 
+
+
+for (i in 1:dim(t3data)[1]) {
+  temp <- combinedVars2n3 %>% filter(prolific_ID == t3data$prolific_ID[i])
+  if (t3data$movedyes[i] == 0) {
+    if (is.na(temp[1,8]) & !is.na(temp[2,8])) {
+      temp[1,4:21] <- temp[2,4:21] #overwritting location info, adding park and pop info
+    }
+    else if (!is.na(temp[1,8]) & is.na(temp[2,8])) {
+      temp[2,4:21] <- temp[1,4:21] #overwritting location info, adding park and pop info
+    }
+  }
+  combinedVars_ovrNA_temp <- rbind(combinedVars_ovrNA_temp, temp)
+}
+
+#used for checking, should be the same as combinedVars but with appropriate NAs over-wrote
+combinedVars_ovrNA <- init_data %>% 
+  select(prolific_ID, time) %>%
+  left_join(combinedVars_ovrNA_temp, by = c("prolific_ID" = "prolific_ID", "time" = "time"))
+
+
+completeData_ovrNA <- init_data %>%
+  left_join(combinedVars_ovrNA %>% select(!movedyes), by = c("prolific_ID" = "prolific_ID", "time" = "time"))
+
+write_csv(completeData_ovrNA, "data/NaturalElementsSpatialAnalysis - TractData_OverwroteNAs.csv")
+
+
+```
 
