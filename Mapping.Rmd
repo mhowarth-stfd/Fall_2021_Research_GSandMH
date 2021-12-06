@@ -1,0 +1,77 @@
+---
+title: "Mapping Tracts"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+```{r libraries}
+
+library(tidyverse)
+library(tigris)
+library(stringr)
+
+Sys.setenv(CENSUS_KEY="dbcdeeed2f9e907f31811ee78c1f239a2aa77934")
+
+```
+
+
+```{r read data}
+park_data <- read_csv("data/NaturalElementsSpatialAnalysis - TractData_OverwroteNAs.csv")
+
+t2_tracts_all <- filter(park_data, time == 2) %>% select(prolific_ID, time, tract)
+
+t3_tracts_all <- filter(park_data, time == 3) %>% select(prolific_ID, time, tract)
+
+t2_tracts_park <- filter(park_data, time == 2 & !is.na(propPark)) %>% select(prolific_ID, time, tract)
+
+t2_tracts_park <- filter(park_data, time == 3 & !is.na(propPark)) %>% select(prolific_ID, time, tract)
+
+# us_tracts_20 <- tracts(state = NULL, cb = TRUE) %>% rename(tract = TRACTCE)
+# write_rds(us_tracts_20, file = "data/us_tracts_20.rds")
+
+us_tracts_20 <- read_rds( file = "data/us_tracts_20.rds")
+
+```
+
+
+```{r compile with geospatial data}
+
+
+t2_tracts_mapping <- t2_tracts_all %>%
+  left_join(checkiy)%>% 
+  st_as_sf()
+
+
+  left_join(t2_tracts_all, us_tracts_20) %>% st_as_sf() %>%
+  st_join(us_tracts_20 %>% select(tract,geometry)) %>% 
+  st_as_sf()
+
+t2_tracts_park_mapping <- left_join(t2_tracts_park, us_tracts_20) %>% st_as_sf()
+```
+
+
+```{r map}
+tracts_of_interest <- leaflet() %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>% 
+  addPolygons(
+    data = t2_tracts_mapping,
+    stroke = T,
+    opacity = 0.5,
+    fill = F
+  ) 
+
+tracts_of_interest
+```
+
+
+
+
+
+
+
+
