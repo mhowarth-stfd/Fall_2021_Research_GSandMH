@@ -1,5 +1,5 @@
 ---
-title: "Mapping Tracts"
+title: "Mapping Participant Locations"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -14,6 +14,8 @@ knitr::opts_chunk$set(echo = F, warning = F, message = F)
 library(tidyverse)
 library(tigris)
 library(stringr)
+library(sf)
+library(leaflet)
 
 Sys.setenv(CENSUS_KEY="dbcdeeed2f9e907f31811ee78c1f239a2aa77934")
 
@@ -29,9 +31,9 @@ t3_tracts_all <- filter(park_data, time == 3) %>% select(prolific_ID, time, trac
 
 t2_tracts_park <- filter(park_data, time == 2 & !is.na(propPark)) %>% select(prolific_ID, time, tract)
 
-t2_tracts_park <- filter(park_data, time == 3 & !is.na(propPark)) %>% select(prolific_ID, time, tract)
+t3_tracts_park <- filter(park_data, time == 3 & !is.na(propPark)) %>% select(prolific_ID, time, tract)
 
-# us_tracts_20 <- tracts(state = NULL, cb = TRUE) %>% rename(tract = TRACTCE)
+# us_tracts_20 <- tracts(state = NULL, cb = TRUE) %>% rename(tract = GEOID)
 # write_rds(us_tracts_20, file = "data/us_tracts_20.rds")
 
 us_tracts_20 <- read_rds( file = "data/us_tracts_20.rds")
@@ -43,25 +45,34 @@ us_tracts_20 <- read_rds( file = "data/us_tracts_20.rds")
 
 
 t2_tracts_mapping <- t2_tracts_all %>%
-  left_join(checkiy)%>% 
+  left_join(us_tracts_20)%>% 
+  st_as_sf()
+
+t2_tracts_park_mapping <- t2_tracts_park %>%
+  left_join(us_tracts_20)%>% 
   st_as_sf()
 
 
-  left_join(t2_tracts_all, us_tracts_20) %>% st_as_sf() %>%
-  st_join(us_tracts_20 %>% select(tract,geometry)) %>% 
+t3_tracts_mapping <- t3_tracts_all %>%
+  left_join(us_tracts_20)%>% 
   st_as_sf()
 
-t2_tracts_park_mapping <- left_join(t2_tracts_park, us_tracts_20) %>% st_as_sf()
+t3_tracts_park_mapping <- t3_tracts_park %>%
+  left_join(us_tracts_20)%>% 
+  st_as_sf()
+
 ```
 
+The tracts where survey participants lived at the time of Survey 1 are outlined in green below.     
 
 ```{r map}
-tracts_of_interest <- leaflet() %>% 
+tracts_of_interest <- leaflet(t2_tracts_mapping) %>% 
   addProviderTiles(providers$CartoDB.Positron) %>% 
   addPolygons(
     data = t2_tracts_mapping,
-    stroke = T,
-    opacity = 0.5,
+    color = "green",
+    opacity = 1,
+    weight = 2,
     fill = F
   ) 
 
