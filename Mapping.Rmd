@@ -66,10 +66,10 @@ t3_tracts_park_mapping <- t3_tracts_park %>%
 The tracts where survey participants lived at the time of Survey 1 are outlined in green below.     
 
 ```{r map}
-tracts_of_interest <- leaflet(t2_tracts_mapping) %>% 
+tracts_of_interest <- leaflet(t2_tracts_mapping) %>% # change mapped group here
   addProviderTiles(providers$CartoDB.Positron) %>% 
   addPolygons(
-    data = t2_tracts_mapping,
+    data = t2_tracts_mapping, # change mapped group her
     color = "green",
     opacity = 1,
     weight = 2,
