@@ -138,6 +138,8 @@ newvar_prsn_data <- newvar_prsn_data %>%
 
 ## Do personality features -how much time you're spending in nature? 
 
+### Conscientiousness
+
 ```{r conscientiousness and nature}
 
 consc_natureDays <-
@@ -185,6 +187,7 @@ consc_natureTotal <-
 consc_natureTotal
 ```
 
+### Emotional
 
 ```{r emotional and nature}
 
@@ -233,6 +236,7 @@ emo_natureTotal <-
 emo_natureTotal
 ```
 
+### Agreeableness
 
 ```{r agreeableness and nature}
 
@@ -281,6 +285,7 @@ agree_natureTotal <-
 agree_natureTotal
 ```
 
+### Openness
 
 ```{r openness and nature}
 
@@ -329,6 +334,7 @@ open_natureTotal <-
 open_natureTotal
 ```
 
+### Estraversion
 
 ```{r extraversion and nature}
 
@@ -380,6 +386,8 @@ extra_natureTotal
 
 ## Do neighborhood park features influence how much time you're spending in nature?
 
+### Number of Parks
+
 ```{r num parks and nature}
 
 np_natureDays <-
@@ -427,6 +435,7 @@ np_natureTotal <-
 np_natureTotal
 ```
 
+### Park Area
 
 ```{r park area and nature}
 
@@ -475,6 +484,7 @@ pa_natureTotal <-
 pa_natureTotal
 ```
 
+### Proportion of Parks
 
 ```{r prop parks and nature}
 
@@ -523,6 +533,7 @@ pp_natureTotal <-
 pp_natureTotal
 ```
 
+### Population Density
 
 ```{r pop density and nature}
 
@@ -571,6 +582,7 @@ pd_natureTotal <-
 pd_natureTotal
 ```
 
+### Park Burden
 
 ```{r park burden and nature}
 
@@ -619,6 +631,7 @@ pb_natureTotal <-
 pb_natureTotal
 ```
 
+### Surroundings
 
 ```{r surroundings and nature}
 
@@ -669,6 +682,7 @@ sr_natureTotal
 
 
 ## Does personality type category influence total level of stress?
+
 
 ```{r personality and stress1}
 
@@ -1060,14 +1074,21 @@ extra_changestress2 <-
 
 ```
 
+### Conscientiousness
 
-```{r personality and stress plots}
+```{r personality and stress plots 1}
 
 consc_stress1
 consc_stress2
 consc_totalstress1cat
 consc_totalstress2cat
 consc_changestress2
+```
+
+
+### Emotional
+
+```{r personality and stress plots 2}
 
 emo_stress1
 emo_stress2
@@ -1075,17 +1096,39 @@ emo_totalstress1cat
 emo_totalstress2cat
 emo_changestress2
 
+```
+
+
+### Agreeableness
+
+```{r personality and stress plots 3}
+
+
 agree_stress1
 agree_stress2
 agree_totalstress1cat
 agree_totalstress2cat
 agree_changestress2
+```
+
+
+### Openness
+
+```{r personality and stress plots 4}
+
 
 open_stress1
 open_stress2
 open_totalstress1cat
 open_totalstress2cat
 open_changestress2
+```
+
+
+### Extraversion
+
+```{r personality and stress plots 5}
+
 
 extra_stress1
 extra_stress2
@@ -1097,6 +1140,9 @@ extra_changestress2
 
 
 ## Do park features influence the level of stress?
+
+
+### Number of Parks
 
 ```{r numparks and stress}
 
@@ -1177,6 +1223,8 @@ np_changestress2
 ```
 
 
+### Park Area
+
 ```{r parkarea and stress}
 
 pa_stress1 <-
@@ -1255,6 +1303,8 @@ pa_changestress2
 
 ```
 
+
+### Proportion of Parks
 
 ```{r proppark and stress}
 
@@ -1335,6 +1385,8 @@ pp_changestress2
 ```
 
 
+### Population Density
+
 ```{r popdensity and stress}
 
 pd_stress1 <-
@@ -1414,6 +1466,8 @@ pd_changestress2
 ```
 
 
+### Park Burden
+
 ```{r park burden and stress}
 
 pd_stress1 <-
@@ -1492,6 +1546,8 @@ pd_changestress2
 
 ```
 
+
+### Surroundings
 
 ```{r surroundings and stress}
 
@@ -1574,6 +1630,9 @@ pd_changestress2
 
 ## Does how much time you're spending influence (number days, new number of hours, and total dosage) influence total stress?
 
+
+### Quartile of Days with Time Spent in Nature
+
 ```{r nature days and stress}
 
 days_stress1 <-
@@ -1653,6 +1712,8 @@ days_changestress2
 ```
 
 
+### Quartile of Hours in Nature
+
 ```{r nature hours and stress}
 
 hours_stress1 <-
@@ -1731,6 +1792,8 @@ hours_changestress2
 
 ```
 
+
+### Quartile of Total Time Spent in Nature
 
 ```{r nature total and stress}
 
