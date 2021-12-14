@@ -17,62 +17,126 @@ library(ggplot2)
 
 
 ```{r}
-prsn_data_full <- read_csv("data/data_with_personalities.csv")
+prsn_data_full <- read_csv("data/dataset121321WIDE.csv")
 
-prsn_data <- prsn_data_full %>% select("id","prolific_id", "c_time_in_nature_daysweek", "c_time_in_nature_hoursday", "c_time_nature_total", "pc_time_in_nature_daysweek", "pc_time_in_nature_hoursday", "pc_total_time_nature", "parkareaperperson_nq", "totalstress","totalstress1cat", "highconscientiousness", "lowconscientiousness", "highemotional", "lowemotional", "highagreeableness", "lowagreeableness", "highopenness", "lowopenness", "highextraversion", "lowextraversion")
-
-```
-
-
-```{r find y bounds for nature and stress}
-
-sts_natureDay <- boxplot.stats(prsn_data$c_time_in_nature_daysweek)$stats
-# set bounds from days in week
-natureDay_ylim <- c(0, 7)  # c(sts_natureDay[2]/2,max(sts_natureDay)*1.05) 
-
-sts_natureHour <- boxplot.stats(prsn_data$c_time_in_nature_hoursday)$stats
-natureHour_ylim <- c(0, max(sts_natureHour)*1.05) # sts_natureHour[2]/2 is bottom alt
-
-sts_natureTotal <- boxplot.stats(prsn_data$c_time_nature_total)$stats
-natureTotal_ylim <- c(0, max(sts_natureTotal)*1.05) # sts_natureTotal[2]/2 is bottom alt
-
-sts_stress <- boxplot.stats(prsn_data$totalstress)$stats
-stress_ylim <- c(0, max(sts_stress)*1.05) # sts_stress[2]/2 is bottom alt
+prsn_data <- prsn_data_full %>% select("id", "prolific_id", "c_time_in_nature_daysweek", "c_time_in_nature_hoursdaynew", "c_total_time_naturenew", "numparks_nq", "parkarea_nq", "proppark_nq", "popdensity_nq", "parkareaperperson_nq", "c_surroundings", "y1", "y2", "totalstress1cat","totalstress2cat", "changestress2", "catconscientiousness", "catemotional", "catagreeableness", "catopenness", "catextraversion")
 
 ```
 
 
-```{r new variables for personality}
+```{r new variables}
 
 # creating variable for personality type that combines low and high variables to one for plotting
 
 newvar_prsn_data <- prsn_data %>% 
   mutate(
+    # personality 
     conscientiousness = case_when(
-      highconscientiousness == 1 ~ "High",
-      lowconscientiousness == 1 ~ "Low"
+      catconscientiousness == 3 ~ "3 - High",
+      catconscientiousness == 2 ~ "2 - Medium",
+      catconscientiousness == 1 ~ "1 - Low"
     ),
     emotional = case_when(
-      highemotional == 1 ~ "High",
-      lowemotional == 1 ~ "Low"
+      catemotional == 3 ~ "3 - High",
+      catemotional == 2 ~ "2 - Medium",
+      catemotional == 1 ~ "1 - Low"
     ),
     agreeableness = case_when(
-      highagreeableness == 1 ~ "High",
-      lowagreeableness == 1 ~ "Low"
+      catagreeableness == 3 ~ "3 - High",
+      catagreeableness == 2 ~ "2 - Medium",
+      catagreeableness == 1 ~ "1 - Low"
     ),
     openness = case_when(
-      highopenness == 1 ~ "High",
-      lowopenness == 1 ~ "Low"
+      catopenness == 3 ~ "3 - High",
+      catopenness == 2 ~ "2 - Medium",
+      catopenness == 1 ~ "1 - Low"
     ),
     extraversion = case_when(
-      highextraversion == 1 ~ "High",
-      lowextraversion == 1 ~ "Low"
+      catextraversion == 3 ~ "3 - High",
+      catextraversion == 2 ~ "2 - Medium",
+      catextraversion == 1 ~ "1 - Low"
     ),
-    pb = as.character(parkareaperperson_nq)
+    
+    # park info
+    numparks_nq = as.character(numparks_nq),
+    parkarea_nq = as.character(parkarea_nq),
+    proppark_nq = as.character(proppark_nq),
+    popdensity_nq = as.character(popdensity_nq),
+    parkareaperperson_nq = as.character(parkareaperperson_nq),
+    c_surroundings = case_when(
+      c_surroundings == "Other:" ~ "Other",
+      TRUE ~ c_surroundings
+    ),
+    
+    # direct nature
+    days = c_time_in_nature_daysweek,
+    hours = c_time_in_nature_hoursdaynew,
+    total = c_total_time_naturenew,
+    
+    # stress
+    
+    stress1 = y1,
+    stress2 = y2
+    # "totalstress1cat","totalstress2cat", "changestress2"
+
   )
 
 ```
 
+
+```{r find y bounds for nature and stress}
+# Nature
+
+natureDays_Qs <- quantile(newvar_prsn_data$days, na.rm = T)
+natureDay_ylim <- c(0, 7)  
+
+natureHours_Qs <- quantile(newvar_prsn_data$hours, na.rm = T)
+natureHour_ylim <- c(0, (natureHours_Qs[4]+1.5*(natureHours_Qs[4] - natureHours_Qs[2]))*1.05) 
+
+natureTotal_Qs <- quantile(newvar_prsn_data$total, na.rm = T)
+natureTotal_ylim <- c(0, (natureTotal_Qs[4]+1.5*(natureTotal_Qs[4] - natureTotal_Qs[2]))*1.05) 
+
+
+
+# stress
+changestress_Qs <-quantile(newvar_prsn_data$changestress2, na.rm = T)
+changestress_ylim <-  c( (changestress_Qs[2]*2), (changestress_Qs[4]+1.5*(changestress_Qs[4] - changestress_Qs[2]))*1.05) 
+
+stress_ylim <- c(0, 40)
+
+stresscat_ylim <- c(0, 5)
+
+```
+
+
+```{r 3 nature variables quartiles}
+
+newvar_prsn_data <- newvar_prsn_data %>%
+  mutate(
+    natureDays_Q = case_when(
+      days > natureDays_Qs[4] ~ "4",
+      days > natureDays_Qs[3] ~ "3",
+      days > natureDays_Qs[2] ~ "2",
+      days >= natureDays_Qs[1] ~ "1"
+    ),
+    natureHours_Q = case_when(
+      hours > natureHours_Qs[4] ~ "4",
+      hours > natureHours_Qs[3] ~ "3",
+      hours > natureHours_Qs[2] ~ "2",
+      hours >= natureHours_Qs[1] ~ "1"
+    ),
+    natureTotal_Q = case_when(
+      total > natureTotal_Qs[4] ~ "4",
+      total > natureTotal_Qs[3] ~ "3",
+      total > natureTotal_Qs[2] ~ "2",
+      total >= natureTotal_Qs[1] ~ "1"
+    )
+  )
+
+```
+
+
+## Do personality features -how much time you're spending in nature? 
 
 ```{r conscientiousness and nature}
 
@@ -80,7 +144,7 @@ consc_natureDays <-
   newvar_prsn_data %>%
   filter(!is.na(conscientiousness)) %>%
   ggplot(
-         aes_string( x = 'conscientiousness', y = 'c_time_in_nature_daysweek')) + 
+         aes_string( x = 'conscientiousness', y = 'days')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Conscientiousness",
@@ -95,7 +159,7 @@ consc_natureHours <-
   newvar_prsn_data %>%
   filter(!is.na(conscientiousness)) %>%
   ggplot(
-         aes_string( x = 'conscientiousness', y = 'c_time_in_nature_hoursday')) + 
+         aes_string( x = 'conscientiousness', y = 'hours')) + 
   geom_boxplot() +
   labs(
     x = "Conscientiousness",
@@ -110,12 +174,12 @@ consc_natureTotal <-
   newvar_prsn_data %>%
   filter(!is.na(conscientiousness)) %>%
   ggplot(
-         aes_string( x = 'conscientiousness', y = 'c_time_nature_total')) + 
+         aes_string( x = 'conscientiousness', y = 'total')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Conscientiousness",
-    y = "Total Hours in a Week Spent in Nature",
-    title = "Total Hours in a Week in Nature by Conscientiousness",
+    y = "Total Minutes in a Week Spent in Nature",
+    title = "Total Minutes in a Week in Nature by Conscientiousness",
   )+
   ylim(natureTotal_ylim)
 consc_natureTotal
@@ -128,7 +192,7 @@ emo_natureDays <-
   newvar_prsn_data %>%
   filter(!is.na(emotional)) %>%
   ggplot(
-         aes_string( x = 'emotional', y = 'c_time_in_nature_daysweek')) + 
+         aes_string( x = 'emotional', y = 'days')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Emotionalness",
@@ -143,7 +207,7 @@ emo_natureHours <-
   newvar_prsn_data %>%
   filter(!is.na(emotional)) %>%
   ggplot(
-         aes_string( x = 'emotional', y = 'c_time_in_nature_hoursday')) + 
+         aes_string( x = 'emotional', y = 'hours')) + 
   geom_boxplot() +
   labs(
     x = "Emotionalness",
@@ -158,12 +222,12 @@ emo_natureTotal <-
   newvar_prsn_data %>%
   filter(!is.na(emotional)) %>%
   ggplot(
-         aes_string( x = 'emotional', y = 'c_time_nature_total')) + 
+         aes_string( x = 'emotional', y = 'total')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Emotional",
-    y = "Total Hours in a Week Spent in Nature",
-    title = "Total Hours in a Week in Nature by Emotional",
+    y = "Total Minutes in a Week Spent in Nature",
+    title = "Total Minutes in a Week in Nature by Emotional",
   )+
   ylim(natureTotal_ylim)
 emo_natureTotal
@@ -176,7 +240,7 @@ agree_natureDays <-
   newvar_prsn_data %>%
   filter(!is.na(agreeableness)) %>%
   ggplot(
-         aes_string( x = 'agreeableness', y = 'c_time_in_nature_daysweek')) + 
+         aes_string( x = 'agreeableness', y = 'days')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Agreeableness",
@@ -191,7 +255,7 @@ agree_natureHours <-
   newvar_prsn_data %>%
   filter(!is.na(agreeableness)) %>%
   ggplot(
-         aes_string( x = 'agreeableness', y = 'c_time_in_nature_hoursday')) + 
+         aes_string( x = 'agreeableness', y = 'hours')) + 
   geom_boxplot() +
   labs(
     x = "Agreeableness",
@@ -206,12 +270,12 @@ agree_natureTotal <-
   newvar_prsn_data %>%
   filter(!is.na(agreeableness)) %>%
   ggplot(
-         aes_string( x = 'agreeableness', y = 'c_time_nature_total')) + 
-  geom_boxplot(outlier.shape = NA) +
+         aes_string( x = 'agreeableness', y = 'total')) + 
+  geom_boxplot() +
   labs(
     x = "Agreeableness",
-    y = "Total Hours in a Week Spent in Nature",
-    title = "Total Hours in a Week in Nature by Agreeableness",
+    y = "Total Minutes in a Week Spent in Nature",
+    title = "Total Minutes in a Week in Nature by Agreeableness",
   )+
   ylim(natureTotal_ylim)
 agree_natureTotal
@@ -224,7 +288,7 @@ open_natureDays <-
   newvar_prsn_data %>%
   filter(!is.na(openness)) %>%
   ggplot(
-         aes_string( x = 'openness', y = 'c_time_in_nature_daysweek')) + 
+         aes_string( x = 'openness', y = 'days')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Openness",
@@ -239,7 +303,7 @@ open_natureHours <-
   newvar_prsn_data %>%
   filter(!is.na(openness)) %>%
   ggplot(
-         aes_string( x = 'openness', y = 'c_time_in_nature_hoursday')) + 
+         aes_string( x = 'openness', y = 'hours')) + 
   geom_boxplot() +
   labs(
     x = "Openness",
@@ -254,12 +318,12 @@ open_natureTotal <-
   newvar_prsn_data %>%
   filter(!is.na(openness)) %>%
   ggplot(
-         aes_string( x = 'openness', y = 'c_time_nature_total')) + 
+         aes_string( x = 'openness', y = 'total')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Openness",
-    y = "Total Hours in a Week Spent in Nature",
-    title = "Total Hours in a Week in Nature by Openness",
+    y = "Total Minutes in a Week Spent in Nature",
+    title = "Total Minutes in a Week in Nature by Openness",
   )+
   ylim(natureTotal_ylim)
 open_natureTotal
@@ -272,7 +336,7 @@ extra_natureDays <-
   newvar_prsn_data %>%
   filter(!is.na(extraversion)) %>%
   ggplot(
-         aes_string( x = 'extraversion', y = 'c_time_in_nature_daysweek')) + 
+         aes_string( x = 'extraversion', y = 'days')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Extraversion",
@@ -287,7 +351,7 @@ extra_natureHours <-
   newvar_prsn_data %>%
   filter(!is.na(extraversion)) %>%
   ggplot(
-         aes_string( x = 'extraversion', y = 'c_time_in_nature_hoursday')) + 
+         aes_string( x = 'extraversion', y = 'hours')) + 
   geom_boxplot() +
   labs(
     x = "Extraversion",
@@ -302,15 +366,209 @@ extra_natureTotal <-
   newvar_prsn_data %>%
   filter(!is.na(extraversion)) %>%
   ggplot(
-         aes_string( x = 'extraversion', y = 'c_time_nature_total')) + 
+         aes_string( x = 'extraversion', y = 'total')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Extraversion",
-    y = "Total Hours in a Week Spent in Nature",
-    title = "Total Hours in a Week in Nature by Extraversion",
+    y = "Total Minutes in a Week Spent in Nature",
+    title = "Total Minutes in a Week in Nature by Extraversion",
   )+
   ylim(natureTotal_ylim)
 extra_natureTotal
+```
+
+
+## Do neighborhood park features influence how much time you're spending in nature?
+
+```{r num parks and nature}
+
+np_natureDays <-
+  newvar_prsn_data %>%
+  filter(!is.na(numparks_nq)) %>%
+  ggplot(
+         aes_string( x = "numparks_nq", y = 'days')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Number of Parks in Tract",
+    y = "Number of Days with Time Spent in Nature",
+    title = "Days in Nature by Number of Parks",
+  )+
+  ylim(natureDay_ylim)
+np_natureDays
+
+
+np_natureHours <-
+  newvar_prsn_data %>%
+  filter(!is.na(numparks_nq)) %>%
+  ggplot(
+         aes_string( x = "numparks_nq", y = 'hours')) + 
+  geom_boxplot() +
+  labs(
+    x = "Number of Parks in Tract",
+    y = "Hours in a Day Spent in Nature",
+    title = "Hours in a Day in Nature by Number of Parks",
+  )+
+  ylim(natureHour_ylim)
+np_natureHours
+
+
+np_natureTotal <-
+  newvar_prsn_data %>%
+  filter(!is.na(numparks_nq)) %>%
+  ggplot(
+         aes_string( x = "numparks_nq", y = 'total')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Number of Parks in Tract",
+    y = "Total Minutes in a Week Spent in Nature",
+    title = "Total Minutes in a Week in Nature by Number of Parks",
+  )+
+  ylim(natureTotal_ylim)
+np_natureTotal
+```
+
+
+```{r park area and nature}
+
+pa_natureDays <-
+  newvar_prsn_data %>%
+  filter(!is.na(parkarea_nq)) %>%
+  ggplot(
+         aes_string( x = "parkarea_nq", y = 'days')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Park Area in Tract",
+    y = "Number of Days with Time Spent in Nature",
+    title = "Days in Nature by Park Area in Tract",
+  )+
+  ylim(natureDay_ylim)
+pa_natureDays
+
+
+pa_natureHours <-
+  newvar_prsn_data %>%
+  filter(!is.na(parkarea_nq)) %>%
+  ggplot(
+         aes_string( x = "parkarea_nq", y = 'hours')) + 
+  geom_boxplot() +
+  labs(
+    x = "Park Area in Tract",
+    y = "Hours in a Day Spent in Nature",
+    title = "Hours in a Day in Nature by Park Area in Tract",
+  )+
+  ylim(natureHour_ylim)
+pa_natureHours
+
+
+pa_natureTotal <-
+  newvar_prsn_data %>%
+  filter(!is.na(parkarea_nq)) %>%
+  ggplot(
+         aes_string( x = "parkarea_nq", y = 'total')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Park Area in Tract",
+    y = "Total Minutes in a Week Spent in Nature",
+    title = "Total Minutes in a Week in Nature by Park Area in Tract",
+  )+
+  ylim(natureTotal_ylim)
+pa_natureTotal
+```
+
+
+```{r prop parks and nature}
+
+pp_natureDays <-
+  newvar_prsn_data %>%
+  filter(!is.na(proppark_nq)) %>%
+  ggplot(
+         aes_string( x = "proppark_nq", y = 'days')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Proportion of Park Area in Tract",
+    y = "Number of Days with Time Spent in Nature",
+    title = "Days in Nature by Proportion of Park Area in Tract",
+  )+
+  ylim(natureDay_ylim)
+pp_natureDays
+
+
+pp_natureHours <-
+  newvar_prsn_data %>%
+  filter(!is.na(proppark_nq)) %>%
+  ggplot(
+         aes_string( x = "proppark_nq", y = 'hours')) + 
+  geom_boxplot() +
+  labs(
+    x = "Proportion of Park Area in Tract",
+    y = "Hours in a Day Spent in Nature",
+    title = "Hours in a Day in Nature by Proportion of Park Area in Tract",
+  )+
+  ylim(natureHour_ylim)
+pp_natureHours
+
+
+pp_natureTotal <-
+  newvar_prsn_data %>%
+  filter(!is.na(proppark_nq)) %>%
+  ggplot(
+         aes_string( x = "proppark_nq", y = 'total')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Proportion of Park Area in Tract",
+    y = "Total Minutes in a Week Spent in Nature",
+    title = "Total Minutes in a Week in Nature by Proportion of Park Area in Tract",
+  )+
+  ylim(natureTotal_ylim)
+pp_natureTotal
+```
+
+
+```{r pop density and nature}
+
+pd_natureDays <-
+  newvar_prsn_data %>%
+  filter(!is.na(popdensity_nq)) %>%
+  ggplot(
+         aes_string( x = "popdensity_nq", y = 'days')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Population Density of Tract",
+    y = "Number of Days with Time Spent in Nature",
+    title = "Days in Nature by Population Density",
+  )+
+  ylim(natureDay_ylim)
+pd_natureDays
+
+
+pd_natureHours <-
+  newvar_prsn_data %>%
+  filter(!is.na(popdensity_nq)) %>%
+  ggplot(
+         aes_string( x = "popdensity_nq", y = 'hours')) + 
+  geom_boxplot() +
+  labs(
+    x = "Population Density of Tract",
+    y = "Hours in a Day Spent in Nature",
+    title = "Hours in a Day in Nature by Population Density",
+  )+
+  ylim(natureHour_ylim)
+pd_natureHours
+
+
+pd_natureTotal <-
+  newvar_prsn_data %>%
+  filter(!is.na(popdensity_nq)) %>%
+  ggplot(
+         aes_string( x = "popdensity_nq", y = 'total')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Population Density of Tract",
+    y = "Total Minutes in a Week Spent in Nature",
+    title = "Total Minutes in a Week in Nature by Population Density",
+  )+
+  ylim(natureTotal_ylim)
+pd_natureTotal
 ```
 
 
@@ -318,12 +576,12 @@ extra_natureTotal
 
 pb_natureDays <-
   newvar_prsn_data %>%
-  filter(!is.na(pb)) %>%
+  filter(!is.na(parkareaperperson_nq)) %>%
   ggplot(
-         aes_string( x = "pb", y = 'c_time_in_nature_daysweek')) + 
+         aes_string( x = "parkareaperperson_nq", y = 'days')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
-    x = "Park Burden",
+    x = "Park Burden of Tract",
     y = "Number of Days with Time Spent in Nature",
     title = "Days in Nature by Park Burden",
   )+
@@ -333,12 +591,12 @@ pb_natureDays
 
 pb_natureHours <-
   newvar_prsn_data %>%
-  filter(!is.na(pb)) %>%
+  filter(!is.na(parkareaperperson_nq)) %>%
   ggplot(
-         aes_string( x = "pb", y = 'c_time_in_nature_hoursday')) + 
+         aes_string( x = "parkareaperperson_nq", y = 'hours')) + 
   geom_boxplot() +
   labs(
-    x = "Park Burden",
+    x = "Park Burden of Tract",
     y = "Hours in a Day Spent in Nature",
     title = "Hours in a Day in Nature by Park Burden",
   )+
@@ -348,196 +606,1209 @@ pb_natureHours
 
 pb_natureTotal <-
   newvar_prsn_data %>%
-  filter(!is.na(pb)) %>%
+  filter(!is.na(parkareaperperson_nq)) %>%
   ggplot(
-         aes_string( x = "pb", y = 'c_time_nature_total')) + 
+         aes_string( x = "parkareaperperson_nq", y = 'total')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
-    x = "Park Burden",
-    y = "Total Hours in a Week Spent in Nature",
-    title = "Total Hours in a Week in Nature by Park Burden",
+    x = "Park Burden of Tract",
+    y = "Total Minutes in a Week Spent in Nature",
+    title = "Total Minutes in a Week in Nature by Park Burden",
   )+
   ylim(natureTotal_ylim)
 pb_natureTotal
 ```
 
 
-```{r personality and stress}
+```{r surroundings and nature}
 
-consc_stress <-
+sr_natureDays <-
+  newvar_prsn_data %>%
+  filter(!is.na(c_surroundings)) %>%
+  ggplot(
+         aes_string( x = "c_surroundings", y = 'days')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Surroundings",
+    y = "Number of Days with Time Spent in Nature",
+    title = "Days in Nature by Surroundings",
+  )+
+  ylim(natureDay_ylim)
+sr_natureDays
+
+
+sr_natureHours <-
+  newvar_prsn_data %>%
+  filter(!is.na(c_surroundings)) %>%
+  ggplot(
+         aes_string( x = "c_surroundings", y = 'hours')) + 
+  geom_boxplot() +
+  labs(
+    x = "Surroundings",
+    y = "Hours in a Day Spent in Nature",
+    title = "Hours in a Day in Nature by Surroundings",
+  )+
+  ylim(natureHour_ylim)
+sr_natureHours
+
+
+sr_natureTotal <-
+  newvar_prsn_data %>%
+  filter(!is.na(c_surroundings)) %>%
+  ggplot(
+         aes_string( x = "c_surroundings", y = 'total')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Surroundings",
+    y = "Total Minutes in a Week Spent in Nature",
+    title = "Total Minutes in a Week in Nature by Surroundings",
+  )+
+  ylim(natureTotal_ylim)
+sr_natureTotal
+```
+
+
+## Does personality type category influence total level of stress?
+
+```{r personality and stress1}
+
+consc_stress1 <-
   newvar_prsn_data %>%
   filter(!is.na(conscientiousness)) %>%
   ggplot(
-         aes_string( x = 'conscientiousness', y = 'totalstress')) + 
+         aes_string( x = 'conscientiousness', y = 'stress1')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Conscientiousness",
-    y = "Total Stress",
-    title = "Total Stress by Conscientiousness",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Conscientiousness",
   )+
   ylim(stress_ylim)
-consc_stress
 
 
-emo_stress <-
+emo_stress1 <-
   newvar_prsn_data %>%
   filter(!is.na(emotional)) %>%
   ggplot(
-         aes_string( x = 'emotional', y = 'totalstress')) + 
+         aes_string( x = 'emotional', y = 'stress1')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Emotionalness",
-    y = "Total Stress",
-    title = "Total Stress by Emotionalness",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Emotionalness",
   )+
   ylim(stress_ylim)
-emo_stress
 
 
-agree_stress <-
+
+agree_stress1 <-
   newvar_prsn_data %>%
   filter(!is.na(agreeableness)) %>%
   ggplot(
-         aes_string( x = 'agreeableness', y = 'totalstress')) + 
+         aes_string( x = 'agreeableness', y = 'stress1')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Agreeableness",
-    y = "Total Stress",
-    title = "Total Stress by Agreeableness",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Agreeableness",
   )+
   ylim(stress_ylim)
-agree_stress
 
 
-open_stress <-
+
+open_stress1 <-
   newvar_prsn_data %>%
   filter(!is.na(openness)) %>%
   ggplot(
-         aes_string( x = 'openness', y = 'totalstress')) + 
+         aes_string( x = 'openness', y = 'stress1')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Openness",
-    y = "Total Stress",
-    title = "Total Stress by Openness",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Openness",
   )+
   ylim(stress_ylim)
-open_stress
 
 
-extra_stress <-
+
+extra_stress1 <-
   newvar_prsn_data %>%
   filter(!is.na(extraversion)) %>%
   ggplot(
-         aes_string( x = 'extraversion', y = 'totalstress')) + 
+         aes_string( x = 'extraversion', y = 'stress1')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
     x = "Extraversion",
-    y = "Total Stress",
-    title = "Total Stress by Extraversion",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Extraversion",
   )+
   ylim(stress_ylim)
-extra_stress
+
 
 
 ```
 
 
-```{r 3 nature variables quartiles}
+```{r personality and stress2}
 
-natureDays_Qs <- quantile(newvar_prsn_data$c_time_in_nature_daysweek, na.rm = T)
-natureHours_Qs <- quantile(newvar_prsn_data$c_time_in_nature_hoursday, na.rm = T)
-natureTotal_Qs <- quantile(newvar_prsn_data$c_time_nature_total, na.rm = T)
+consc_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(conscientiousness)) %>%
+  ggplot(
+         aes_string( x = 'conscientiousness', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Conscientiousness",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Conscientiousness",
+  )+
+  ylim(stress_ylim)
 
-newvar_prsn_data <- newvar_prsn_data %>%
-  mutate(
-    natureDays_Q = case_when(
-      c_time_in_nature_daysweek > natureDays_Qs[4] ~ "4",
-      c_time_in_nature_daysweek > natureDays_Qs[3] ~ "3",
-      c_time_in_nature_daysweek > natureDays_Qs[2] ~ "2",
-      c_time_in_nature_daysweek >= natureDays_Qs[1] ~ "1"
-    ),
-    natureHours_Q = case_when(
-      c_time_in_nature_hoursday > natureHours_Qs[4] ~ "4",
-      c_time_in_nature_hoursday > natureHours_Qs[3] ~ "3",
-      c_time_in_nature_hoursday > natureHours_Qs[2] ~ "2",
-      c_time_in_nature_hoursday >= natureHours_Qs[1] ~ "1"
-    ),
-    natureTotal_Q = case_when(
-      c_time_nature_total > natureTotal_Qs[4] ~ "4",
-      c_time_nature_total > natureTotal_Qs[3] ~ "3",
-      c_time_nature_total > natureTotal_Qs[2] ~ "2",
-      c_time_nature_total >= natureTotal_Qs[1] ~ "1"
-    )
-  )
+
+emo_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(emotional)) %>%
+  ggplot(
+         aes_string( x = 'emotional', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Emotionalness",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Emotionalness",
+  )+
+  ylim(stress_ylim)
+
+
+
+agree_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(agreeableness)) %>%
+  ggplot(
+         aes_string( x = 'agreeableness', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Agreeableness",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Agreeableness",
+  )+
+  ylim(stress_ylim)
+
+
+
+open_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(openness)) %>%
+  ggplot(
+         aes_string( x = 'openness', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Openness",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Openness",
+  )+
+  ylim(stress_ylim)
+
+
+
+extra_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(extraversion)) %>%
+  ggplot(
+         aes_string( x = 'extraversion', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Extraversion",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Extraversion",
+  )+
+  ylim(stress_ylim)
+
 
 ```
 
 
-```{r stress and nature variables}
-natureDays_stress <-
+```{r personality and totalstress1cat}
+
+consc_totalstress1cat <-
   newvar_prsn_data %>%
-  filter(!is.na(natureDays_Q)) %>%
+  filter(!is.na(conscientiousness)) %>%
   ggplot(
-         aes_string( x = 'natureDays_Q', y = 'totalstress')) + 
+         aes_string( x = 'conscientiousness', y = 'totalstress1cat')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
-    x = "Quartile of Days with Time Spent in Nature",
-    y = "Total Stress",
-    title = "Total Stress by Quartile of Days with Time Spent in Nature",
+    x = "Conscientiousness",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Conscientiousness",
   )+
-  ylim(stress_ylim)
-natureDays_stress
+  ylim(stresscat_ylim)
 
 
-natureHours_stress <-
+emo_totalstress1cat <-
   newvar_prsn_data %>%
-  filter(!is.na(natureHours_Q)) %>%
+  filter(!is.na(emotional)) %>%
   ggplot(
-         aes_string( x = 'natureHours_Q', y = 'totalstress')) + 
+         aes_string( x = 'emotional', y = 'totalstress1cat')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
-    x = "Quartile of Hours per Day Spent in Nature",
-    y = "Total Stress",
-    title = "Total Stress by Quartile of Hours per Day Spent in Nature",
+    x = "Emotionalness",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Emotionalness",
   )+
-  ylim(stress_ylim)
-natureHours_stress
+  ylim(stresscat_ylim)
 
 
-natureTotal_stress <-
+
+agree_totalstress1cat <-
   newvar_prsn_data %>%
-  filter(!is.na(natureTotal_Q)) %>%
+  filter(!is.na(agreeableness)) %>%
   ggplot(
-         aes_string( x = 'natureTotal_Q', y = 'totalstress')) + 
+         aes_string( x = 'agreeableness', y = 'totalstress1cat')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
-    x = "Quartile of Total Time Spent in Nature",
-    y = "Total Stress",
-    title = "Total Stress by Quartile of Total Time Spent in Nature",
+    x = "Agreeableness",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Agreeableness",
+  )+
+  ylim(stresscat_ylim)
+
+
+
+open_totalstress1cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(openness)) %>%
+  ggplot(
+         aes_string( x = 'openness', y = 'totalstress1cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Openness",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Openness",
+  )+
+  ylim(stresscat_ylim)
+
+
+
+extra_totalstress1cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(extraversion)) %>%
+  ggplot(
+         aes_string( x = 'extraversion', y = 'totalstress1cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Extraversion",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Extraversion",
+  )+
+  ylim(stresscat_ylim)
+
+
+```
+
+
+```{r personality and totalstress2cat}
+
+consc_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(conscientiousness)) %>%
+  ggplot(
+         aes_string( x = 'conscientiousness', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Conscientiousness",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Conscientiousness",
+  )+
+  ylim(stresscat_ylim)
+
+
+emo_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(emotional)) %>%
+  ggplot(
+         aes_string( x = 'emotional', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Emotionalness",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Emotionalness",
+  )+
+  ylim(stresscat_ylim)
+
+
+
+agree_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(agreeableness)) %>%
+  ggplot(
+         aes_string( x = 'agreeableness', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Agreeableness",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Agreeableness",
+  )+
+  ylim(stresscat_ylim)
+
+
+
+open_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(openness)) %>%
+  ggplot(
+         aes_string( x = 'openness', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Openness",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Openness",
+  )+
+  ylim(stresscat_ylim)
+
+
+
+extra_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(extraversion)) %>%
+  ggplot(
+         aes_string( x = 'extraversion', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Extraversion",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Extraversion",
+  )+
+  ylim(stresscat_ylim)
+
+
+```
+
+
+```{r personality and changestress2}
+
+consc_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(conscientiousness)) %>%
+  ggplot(
+         aes_string( x = 'conscientiousness', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Conscientiousness",
+    y = "Change in Stress",
+    title = "Change in Stress by Conscientiousness",
+  )+
+  ylim(changestress_ylim)
+
+
+emo_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(emotional)) %>%
+  ggplot(
+         aes_string( x = 'emotional', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Emotionalness",
+    y = "Change in Stress",
+    title = "Change in Stress by Emotionalness",
+  )+
+  ylim(changestress_ylim)
+
+
+
+agree_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(agreeableness)) %>%
+  ggplot(
+         aes_string( x = 'agreeableness', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Agreeableness",
+    y = "Change in Stress",
+    title = "Change in Stress by Agreeableness",
+  )+
+  ylim(changestress_ylim)
+
+
+
+open_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(openness)) %>%
+  ggplot(
+         aes_string( x = 'openness', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Openness",
+    y = "Change in Stress",
+    title = "Change in Stress by Openness",
+  )+
+  ylim(changestress_ylim)
+
+
+
+extra_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(extraversion)) %>%
+  ggplot(
+         aes_string( x = 'extraversion', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Extraversion",
+    y = "Change in Stress",
+    title = "Change in Stress by Extraversion",
+  )+
+  ylim(changestress_ylim)
+
+
+```
+
+
+```{r personality and stress plots}
+
+consc_stress1
+consc_stress2
+consc_totalstress1cat
+consc_totalstress2cat
+consc_changestress2
+
+emo_stress1
+emo_stress2
+emo_totalstress1cat
+emo_totalstress2cat
+emo_changestress2
+
+agree_stress1
+agree_stress2
+agree_totalstress1cat
+agree_totalstress2cat
+agree_changestress2
+
+open_stress1
+open_stress2
+open_totalstress1cat
+open_totalstress2cat
+open_changestress2
+
+extra_stress1
+extra_stress2
+extra_totalstress1cat
+extra_totalstress2cat
+extra_changestress2
+
+```
+
+
+## Do park features influence the level of stress?
+
+```{r numparks and stress}
+
+np_stress1 <-
+  newvar_prsn_data %>%
+  filter(!is.na(numparks_nq)) %>%
+  ggplot(
+         aes_string( x = 'numparks_nq', y = 'stress1')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Number of Parks in Tract",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Number of Parks in Tract",
   )+
   ylim(stress_ylim)
-natureTotal_stress
+np_stress1
+
+
+np_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(numparks_nq)) %>%
+  ggplot(
+         aes_string( x = 'numparks_nq', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Number of Parks in Tract",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Number of Parks in Tract",
+  )+
+  ylim(stress_ylim)
+np_stress2
+
+
+np_totalstress1cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(numparks_nq)) %>%
+  ggplot(
+         aes_string( x = 'numparks_nq', y = 'totalstress1cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Number of Parks in Tract",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Number of Parks in Tract",
+  )+
+  ylim(stresscat_ylim)
+np_totalstress1cat
+
+
+np_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(numparks_nq)) %>%
+  ggplot(
+         aes_string( x = 'numparks_nq', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Number of Parks in Tract",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Number of Parks in Tract",
+  )+
+  ylim(stresscat_ylim)
+np_totalstress2cat
+
+
+np_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(numparks_nq)) %>%
+  ggplot(
+         aes_string( x = 'numparks_nq', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Number of Parks in Tract",
+    y = "Change in Stress",
+    title = "Change in Stress by Number of Parks in Tract",
+  )+
+  ylim(changestress_ylim)
+np_changestress2
+
+```
+
+
+```{r parkarea and stress}
+
+pa_stress1 <-
+  newvar_prsn_data %>%
+  filter(!is.na(parkarea_nq)) %>%
+  ggplot(
+         aes_string( x = 'parkarea_nq', y = 'stress1')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Park Area in Tract",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Park Area in Tract",
+  )+
+  ylim(stress_ylim)
+pa_stress1
+
+
+pa_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(parkarea_nq)) %>%
+  ggplot(
+         aes_string( x = 'parkarea_nq', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Park Area in Tract",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Park Area in Tract",
+  )+
+  ylim(stress_ylim)
+pa_stress2
+
+
+pa_totalstress1cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(parkarea_nq)) %>%
+  ggplot(
+         aes_string( x = 'parkarea_nq', y = 'totalstress1cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Park Area in Tract",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Park Area in Tract",
+  )+
+  ylim(stresscat_ylim)
+pa_totalstress1cat
+
+
+pa_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(parkarea_nq)) %>%
+  ggplot(
+         aes_string( x = 'parkarea_nq', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Park Area in Tract",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Park Area in Tract",
+  )+
+  ylim(stresscat_ylim)
+pa_totalstress2cat
+
+
+pa_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(parkarea_nq)) %>%
+  ggplot(
+         aes_string( x = 'parkarea_nq', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Park Area in Tract",
+    y = "Change in Stress",
+    title = "Change in Stress by Park Area in Tract",
+  )+
+  ylim(changestress_ylim)
+pa_changestress2
+
+```
+
+
+```{r proppark and stress}
+
+pp_stress1 <-
+  newvar_prsn_data %>%
+  filter(!is.na(proppark_nq)) %>%
+  ggplot(
+         aes_string( x = 'proppark_nq', y = 'stress1')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Proportion of Park Area in Tract",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Proportion of Park Area in Tract",
+  )+
+  ylim(stress_ylim)
+pp_stress1
+
+
+pp_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(proppark_nq)) %>%
+  ggplot(
+         aes_string( x = 'proppark_nq', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Proportion of Park Area in Tract",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Proportion of Park Area in Tract",
+  )+
+  ylim(stress_ylim)
+pp_stress2
+
+
+pp_totalstress1cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(proppark_nq)) %>%
+  ggplot(
+         aes_string( x = 'proppark_nq', y = 'totalstress1cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Proportion of Park Area in Tract",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Proportion of Park Area in Tract",
+  )+
+  ylim(stresscat_ylim)
+pp_totalstress1cat
+
+
+pp_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(proppark_nq)) %>%
+  ggplot(
+         aes_string( x = 'proppark_nq', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Proportion of Park Area in Tract",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Proportion of Park Area in Tract",
+  )+
+  ylim(stresscat_ylim)
+pp_totalstress2cat
+
+
+pp_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(proppark_nq)) %>%
+  ggplot(
+         aes_string( x = 'proppark_nq', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Proportion of Park Area in Tract",
+    y = "Change in Stress",
+    title = "Change in Stress by Proportion of Park Area in Tract",
+  )+
+  ylim(changestress_ylim)
+pp_changestress2
+
+```
+
+
+```{r popdensity and stress}
+
+pd_stress1 <-
+  newvar_prsn_data %>%
+  filter(!is.na(popdensity_nq)) %>%
+  ggplot(
+         aes_string( x = 'popdensity_nq', y = 'stress1')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Population Density of Tract",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Population Density",
+  )+
+  ylim(stress_ylim)
+pd_stress1
+
+
+pd_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(popdensity_nq)) %>%
+  ggplot(
+         aes_string( x = 'popdensity_nq', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Population Density of Tract",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Population Density",
+  )+
+  ylim(stress_ylim)
+pd_stress2
+
+
+pd_totalstress1cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(popdensity_nq)) %>%
+  ggplot(
+         aes_string( x = 'popdensity_nq', y = 'totalstress1cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Population Density of Tract",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Population Density",
+  )+
+  ylim(stresscat_ylim)
+pd_totalstress1cat
+
+
+pd_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(popdensity_nq)) %>%
+  ggplot(
+         aes_string( x = 'popdensity_nq', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Population Density of Tract",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Population Density",
+  )+
+  ylim(stresscat_ylim)
+pd_totalstress2cat
+
+
+pd_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(popdensity_nq)) %>%
+  ggplot(
+         aes_string( x = 'popdensity_nq', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Population Density of Tract",
+    y = "Change in Stress",
+    title = "Change in Stress by Population Density",
+  )+
+  ylim(changestress_ylim)
+pd_changestress2
+
 ```
 
 
 ```{r park burden and stress}
-pb_stress <-
+
+pd_stress1 <-
   newvar_prsn_data %>%
-  filter(!is.na(pb)) %>%
+  filter(!is.na(parkareaperperson_nq)) %>%
   ggplot(
-         aes_string( x = 'pb', y = 'totalstress')) + 
+         aes_string( x = 'parkareaperperson_nq', y = 'stress1')) + 
   geom_boxplot(outlier.shape = NA) +
   labs(
-    x = "Park Burden",
-    y = "Total Stress",
-    title = "Total Stress by Park Burden",
+    x = "Park Burden of Tract",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Park Burden",
   )+
   ylim(stress_ylim)
-pb_stress
+pd_stress1
 
+
+pd_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(parkareaperperson_nq)) %>%
+  ggplot(
+         aes_string( x = 'parkareaperperson_nq', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Park Burden of Tract",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Park Burden",
+  )+
+  ylim(stress_ylim)
+pd_stress2
+
+
+pd_totalstress1cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(parkareaperperson_nq)) %>%
+  ggplot(
+         aes_string( x = 'parkareaperperson_nq', y = 'totalstress1cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Park Burden of Tract",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Park Burden",
+  )+
+  ylim(stresscat_ylim)
+pd_totalstress1cat
+
+
+pd_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(parkareaperperson_nq)) %>%
+  ggplot(
+         aes_string( x = 'parkareaperperson_nq', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Park Burden of Tract",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Park Burden",
+  )+
+  ylim(stresscat_ylim)
+pd_totalstress2cat
+
+
+pd_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(parkareaperperson_nq)) %>%
+  ggplot(
+         aes_string( x = 'parkareaperperson_nq', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Park Burden of Tract",
+    y = "Change in Stress",
+    title = "Change in Stress by Park Burden",
+  )+
+  ylim(changestress_ylim)
+pd_changestress2
 
 ```
 
+
+```{r surroundings and stress}
+
+pd_stress1 <-
+  newvar_prsn_data %>%
+  filter(!is.na(c_surroundings)) %>%
+  ggplot(
+         aes_string( x = 'c_surroundings', y = 'stress1')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Surroundings",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Surroundings",
+  )+
+  ylim(stress_ylim)
+pd_stress1
+
+
+pd_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(c_surroundings)) %>%
+  ggplot(
+         aes_string( x = 'c_surroundings', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Surroundings",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Surroundings",
+  )+
+  ylim(stress_ylim)
+pd_stress2
+
+
+pd_totalstress1cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(c_surroundings)) %>%
+  ggplot(
+         aes_string( x = 'c_surroundings', y = 'totalstress1cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Surroundings",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Surroundings",
+  )+
+  ylim(stresscat_ylim)
+pd_totalstress1cat
+
+
+pd_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(c_surroundings)) %>%
+  ggplot(
+         aes_string( x = 'c_surroundings', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Surroundings",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Surroundings",
+  )+
+  ylim(stresscat_ylim)
+pd_totalstress2cat
+
+
+pd_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(c_surroundings)) %>%
+  ggplot(
+         aes_string( x = 'c_surroundings', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Surroundings",
+    y = "Change in Stress",
+    title = "Change in Stress by Surroundings",
+  )+
+  ylim(changestress_ylim)
+pd_changestress2
+
+```
+
+
+## Does how much time you're spending influence (number days, new number of hours, and total dosage) influence total stress?
+
+```{r nature days and stress}
+
+days_stress1 <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureDays_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureDays_Q', y = 'stress1')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Days with Time Spent in Nature",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Quartile of Days with Time Spent in Nature",
+  )+
+  ylim(stress_ylim)
+days_stress1
+
+
+days_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureDays_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureDays_Q', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Days with Time Spent in Nature",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Quartile of Days with Time Spent in Nature",
+  )+
+  ylim(stress_ylim)
+days_stress2
+
+
+days_totalstress1cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureDays_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureDays_Q', y = 'totalstress1cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Days with Time Spent in Nature",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Quartile of Days with Time Spent in Nature",
+  )+
+  ylim(stresscat_ylim)
+days_totalstress1cat
+
+
+days_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureDays_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureDays_Q', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Days with Time Spent in Nature",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Quartile of Days with Time Spent in Nature",
+  )+
+  ylim(stresscat_ylim)
+days_totalstress2cat
+
+
+days_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureDays_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureDays_Q', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Days with Time Spent in Nature",
+    y = "Change in Stress",
+    title = "Change in Stress by Quartile of Days with Time Spent in Nature",
+  )+
+  ylim(changestress_ylim)
+days_changestress2
+
+```
+
+
+```{r nature hours and stress}
+
+hours_stress1 <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureHours_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureHours_Q', y = 'stress1')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Hours in Nature",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Quartile of Hours in Nature",
+  )+
+  ylim(stress_ylim)
+hours_stress1
+
+
+hours_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureHours_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureHours_Q', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Hours in Nature",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Quartile of Hours in Nature",
+  )+
+  ylim(stress_ylim)
+hours_stress2
+
+
+hours_totalstress1cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureHours_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureHours_Q', y = 'totalstress1cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Hours in Nature",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Quartile of Hours in Nature",
+  )+
+  ylim(stresscat_ylim)
+hours_totalstress1cat
+
+
+hours_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureHours_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureHours_Q', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Hours in Nature",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Quartile of Hours in Nature",
+  )+
+  ylim(stresscat_ylim)
+hours_totalstress2cat
+
+
+hours_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureHours_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureHours_Q', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Hours in Nature",
+    y = "Change in Stress",
+    title = "Change in Stress by Quartile of Hours in Nature",
+  )+
+  ylim(changestress_ylim)
+hours_changestress2
+
+```
+
+
+```{r nature total and stress}
+
+hours_stress1 <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureTotal_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureTotal_Q', y = 'stress1')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Total Time Spent in Nature",
+    y = "Total Stress at S1",
+    title = "Total Stress at S1 by Quartile of Total Time Spent in Nature",
+  )+
+  ylim(stress_ylim)
+hours_stress1
+
+
+hours_stress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureTotal_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureTotal_Q', y = 'stress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Total Time Spent in Nature",
+    y = "Total Stress at S2",
+    title = "Total Stress at S2 by Quartile of Total Time Spent in Nature",
+  )+
+  ylim(stress_ylim)
+hours_stress2
+
+
+hours_totalstress1cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureTotal_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureTotal_Q', y = 'totalstress1cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Total Time Spent in Nature",
+    y = "Categorized Stress at S1",
+    title = "Categorized Stress at S1 by Quartile of Total Time Spent in Nature",
+  )+
+  ylim(stresscat_ylim)
+hours_totalstress1cat
+
+
+hours_totalstress2cat <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureTotal_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureTotal_Q', y = 'totalstress2cat')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Total Time Spent in Nature",
+    y = "Categorized Stress at S2",
+    title = "Categorized Stress at S2 by Quartile of Total Time Spent in Nature",
+  )+
+  ylim(stresscat_ylim)
+hours_totalstress2cat
+
+
+hours_changestress2 <-
+  newvar_prsn_data %>%
+  filter(!is.na(natureTotal_Q)) %>%
+  ggplot(
+         aes_string( x = 'natureTotal_Q', y = 'changestress2')) + 
+  geom_boxplot(outlier.shape = NA) +
+  labs(
+    x = "Quartile of Hours with in Nature",
+    y = "Change in Stress",
+    title = "Change in Stress by Quartile of Total Time Spent in Nature",
+  )+
+  ylim(changestress_ylim)
+hours_changestress2
+
+```
 
 
 
